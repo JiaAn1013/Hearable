@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Helpers ----------
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    function validPhone(p) {
+      return p is string && p.matches('^\\+[1-9][0-9]{7,14}$');
+    }
+    function userFields() {
+      return ['fullName', 'email', 'phone', 'language',
+              'contactConsentConfirmed', 'contactConsentAt', 'createdAt',
+              'privacyConsentVersion', 'privacyConsentAt',
+              'settings', 'updatedAt'];
+    }
+    function contactFields() {
+      return ['name', 'phone', 'role', 'lastTestStatus', 'lastTestAt',
+              'consentConfirmed', 'createdAt', 'updatedAt'];
+    }
+    function eventFields() {
+      return ['categoryKey', 'category', 'tier', 'score', 'simulated',
+              'detectedAt', 'createdAt', 'updatedAt', 'outcome',
+              'escalated', 'escalationReason', 'escalatedAt',
+              'escalationStatus', 'userResponse', 'respondedAt',
+              'ignoreReason', 'muteMinutes', 'cancelledByUser',
+              'cancelledAt', 'notifications', 'allClearSent'];
+    }
+
+    // ---------- User profile ----------
+    match /users/{uid} {
+      allow read, delete: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(userFields());
+      allow update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(userFields())
+        && request.resource.data.get('email', null)
+             == resource.data.get('email', null);
+
+      // ---------- Emergency contacts ----------
+      match /contacts/{contactId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(contactFields())
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 80
+          && validPhone(request.resource.data.phone)
+          && request.resource.data.role in ['primary', 'secondary', 'guardHouse'];
+      }
+
+      // ---------- Alert history ----------
+      match /events/{eventId} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(eventFields())
+          && request.resource.data.categoryKey is string
+          && request.resource.data.simulated is bool
+          && request.resource.data.tier in ['emergency', 'checkIn', 'alertOnly'];
+        allow update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(eventFields())
+          && request.resource.data.categoryKey == resource.data.categoryKey
+          && request.resource.data.detectedAt == resource.data.detectedAt
+          && request.resource.data.simulated == resource.data.simulated;
+      }
+    }
+    // Anything else is denied by default.
+  }
+}
