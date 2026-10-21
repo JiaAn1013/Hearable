@@ -66,7 +66,9 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 8),
                 const Center(
-                  child: Icon(Icons.hearing, size: 64, color: AppColors.navy),
+                  child: Image(
+                      image: AssetImage('assets/images/logo_light.png'),
+                      width: 90, height: 90),
                 ),
                 const SizedBox(height: 12),
                 Semantics(

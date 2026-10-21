@@ -24,14 +24,8 @@ class WelcomeScreen extends StatelessWidget {
                 child: Semantics(
                   label: 'HearAble logo',
                   child: Container(
-                    width: 110,
-                    height: 110,
-                    decoration: const BoxDecoration(
-                      color: AppColors.navy,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.hearing,
-                        size: 60, color: Colors.white),
+                      child: Image.asset('assets/images/logo_light.png',
+                      width: 140, height: 140),
                   ),
                 ),
               ),
